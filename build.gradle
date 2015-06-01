@@ -1,0 +1,141 @@
+apply plugin: 'java'
+apply plugin: 'checkstyle'
+apply plugin: 'jacoco'
+apply plugin: 'maven'
+
+group = 'org.threadly'
+version = '0.1.0-SNAPSHOT'
+
+repositories {
+  mavenCentral()
+  maven {
+    url 'https://oss.sonatype.org/content/repositories/snapshots/'
+  }
+  maven {
+    url 'https://swt-repo.googlecode.com/svn/repo/'
+  }
+}
+
+public String getSWTWindowingLibrary(String platform) {
+  switch (platform.replaceAll(' ', '').toLowerCase()) {
+    case ~/.*linux.*/: return 'gtk'
+    case ~/.*darwin.*/: return 'cocoa'
+    case ~/.*osx.*/: return 'cocoa'
+    case ~/.*win.*/: return 'win32'
+    default: return null
+  }
+}
+
+public String getSWTPlatform(String platform) {
+  switch(platform.replaceAll(' ', '').toLowerCase()) {
+    case ~/.*linux.*/: return 'linux'
+    case ~/.*darwin.*/: return 'macosx'
+    case ~/.*osx.*/: return 'macosx'
+    case ~/.*win.*/: return 'win32'
+    default: return platform
+  }
+}
+
+public String getSWTArch(String arch) {
+  switch(arch) {
+    case ~/.*64.*/: return 'x86_64'
+    default: return 'x86'
+  }
+}
+
+ext {
+  swtVersion = '4.3'
+  swtWindowingLibrary = getSWTWindowingLibrary(System.properties['os.name'])
+  swtArch = getSWTArch(System.properties['os.arch'])
+  swtPlatform = getSWTPlatform(System.properties['os.name'])
+  swtArtifactName = "org.eclipse.swt.${swtWindowingLibrary}.${swtPlatform}.${swtArch}"
+}
+
+dependencies {
+  testCompile group: 'junit', name: 'junit', version: '4.12'
+  
+  compile (
+    "org.threadly:ambush:+",
+    "org.eclipse.swt:${swtArtifactName}:${swtVersion}"
+  )
+}
+
+compileJava {
+  options.compilerArgs << "-Xlint:all" << "-Werror"
+}
+
+compileTestJava {
+  options.compilerArgs << "-Xlint:all" << "-Werror"
+}
+
+jar {
+  manifest {
+    attributes 'Implementation-Title': 'AmbushGUI', 'Implementation-Version': version
+  }
+  from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+}
+
+plugins.withType(JavaPlugin) {
+  checkstyle.sourceSets = [sourceSets.main]
+}
+
+test {
+  jacoco {
+    excludes = ['**/package-info**','**/*Test']
+    destinationFile = file("$buildDir/reports/jacoco/test.exec")
+  }
+  getReports().getJunitXml().setDestination(file("${buildDir}/reports/tests/xml"))
+  getReports().getHtml().setDestination(file("${buildDir}/reports/tests/html"))
+  setBinResultsDir(file("${buildDir}/reports/tests/bin"))
+}
+
+build.dependsOn("jacocoTestReport");
+
+jacocoTestReport {
+  doFirst {
+    classDirectories = fileTree(dir: 'build/classes/main', include: 'org/threadly/**')
+    sourceDirectories = fileTree(dir: 'scr/main/java', include: 'org/threadly/**')
+  }
+  reports {
+    csv.enabled false
+    xml.enabled true
+    xml.destination "${buildDir}/reports/jacoco/jacoco.xml"
+    html.enabled true
+    html.destination "${buildDir}/reports/jacoco/html"
+  }
+  doLast {
+    println "Test results available at:"
+    println "html - $buildDir/reports/tests/html/index.html"
+    println "Test coverage reports available at:"
+    println "html - $buildDir/reports/jacoco/html/index.html"
+    println "xml  - $buildDir/reports/jacoco/jacoco.xml"
+  }
+}
+
+javadoc {
+  source = sourceSets.main.allJava
+  options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PUBLIC
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  classifier = 'javadoc'
+  from 'build/docs/javadoc'
+}
+
+task sourcesJar(type: Jar) {
+  from sourceSets.main.allSource
+  classifier = 'sources'
+}
+
+build.dependsOn("copyLibs");
+
+task copyLibs(type: Copy) {
+  into "$buildDir/dependencies/"
+  from configurations.runtime
+}
+
+artifacts {
+  archives jar
+  archives javadocJar
+  archives sourcesJar
+}
