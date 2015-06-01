@@ -42,7 +42,7 @@ public class NodeTest {
   public void addChildNodeTest() {
     node.addChildNode(joinNode);
     assertTrue(node.getChildNodes().contains(joinNode));
-    assertTrue(joinNode.parentNodes.contains(node));
+    assertTrue(joinNode.getParentNodes().contains(node));
   }
   
   @Test

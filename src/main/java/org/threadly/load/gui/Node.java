@@ -15,9 +15,13 @@ import org.threadly.util.StringUtils;
 public class Node {
   private static final String JOIN_NAME = StringUtils.randomString(5);  // can be short due to identity comparison
 
-  protected final ArrayList<Node> parentNodes;
-  protected final ArrayList<Node> childNodes;
   protected final String name;
+  // private to ensure changes are recorded in modificationCount
+  private final ArrayList<Node> parents;
+  private final ArrayList<Node> children;
+  private int lastCleanChangeCount = Integer.MIN_VALUE;
+  private int modificationCount = lastCleanChangeCount + 1; // should be incremented any time stored data changes
+  
   /**
    * Constructs a new graph node with a specified identifier.  This is a node which is a branch or 
    * fork point.
@@ -33,8 +37,8 @@ public class Node {
    */
   public Node(String name) {
     this.name = name;
-    childNodes = new ArrayList<Node>(2);
-    parentNodes = new ArrayList<Node>(2);
+    children = new ArrayList<Node>(2);
+    parents = new ArrayList<Node>(2);
   }
   
   /**
@@ -72,11 +76,35 @@ public class Node {
    * @param node Node to be added as a child
    */
   public void addChildNode(Node node) {
-    if (! childNodes.contains(node)) {
-      if (! node.parentNodes.contains(this)) {
-        node.parentNodes.add(this);
-      }
-      childNodes.add(node);
+    if (! children.contains(node)) {
+      node.addParent(this);
+      children.add(node);
+      modificationCount++;
+    }
+  }
+  
+  protected void addParent(Node node) {
+    if (! parents.contains(node)) {
+      parents.add(node);
+      modificationCount++;
+    }
+  }
+  
+  protected boolean removeChildNode(Node node) {
+    if (children.remove(node)) {
+      modificationCount++;
+      return true;
+    } else {
+      return false;
+    }
+  }
+  
+  protected boolean removeParentNode(Node node) {
+    if (parents.remove(node)) {
+      modificationCount++;
+      return true;
+    } else {
+      return false;
     }
   }
   
@@ -86,7 +114,7 @@ public class Node {
    * @return A collection of child node references
    */
   public List<Node> getChildNodes() {
-    return Collections.unmodifiableList(childNodes);
+    return Collections.unmodifiableList(children);
   }
   
   /**
@@ -95,18 +123,18 @@ public class Node {
    * @return A collection of parent node references
    */
   public List<Node> getParentNodes() {
-    return Collections.unmodifiableList(parentNodes);
+    return Collections.unmodifiableList(parents);
   }
 
   /**
    * Removes this node from the graph.
    */
   protected void deleteFromGraph() {
-    for (Node n: parentNodes) {
-      n.childNodes.remove(this);
+    for (Node n: parents) {
+      n.removeChildNode(this);
     }
-    for (Node n: childNodes) {
-      n.parentNodes.remove(this);
+    for (Node n: children) {
+      n.removeParentNode(this);
     }
   }
 
@@ -127,92 +155,91 @@ public class Node {
   }
   
   private void doCleanGraph() {
-    if (! isJoinNode()) {
-      // removes child node that is a join node since all items can join off this node
-      /*if (childNodes.size() == 1) {
-        Node childNode = childNodes.get(0);
-        if (childNode.isJoinNode() && childNode.parentNodes.size() == 1) {
-          childNodes.clear();
-          childNodes.addAll(childNode.childNodes);
-        }
-      }*/
-      // removes parent node if our node can function as join node
-      if (parentNodes.size() == 1) {
-        Node parentNode = parentNodes.get(0);
-        if (parentNode.isJoinNode() && parentNode.childNodes.size() < 2) {
-          parentNode.deleteFromGraph();
-          for(Node n : parentNode.parentNodes) {
-            n.childNodes.remove(parentNode);
-            n.addChildNode(this);
-          }
-        }
-      }
-    } else {
-      // loops till consistent state, break at bottom
-      while (true) {
-        // removes tail node on graph that has no children and is a synthetic join node
-        if (childNodes.isEmpty()) {
-          deleteFromGraph();
-          return;
-        } else if (parentNodes.size() == 1) {
-          // remove this node and instead connect parent node to our children
-          Node parentNode = parentNodes.get(0);
-          for (Node childNode : childNodes) {
-            parentNode.addChildNode(childNode);
-          }
-          parentNode.childNodes.remove(this);
-          parentNode.doCleanGraph();
-          return;
-        }
-        // if all child nodes are join nodes, make this node function as the join node
-        boolean modifiedNodes = false;
-        List<Node> originalNodes;
-        do {
-          boolean allChildrenAreJoinNodes = ! childNodes.isEmpty();
-          for (Node n : childNodes) {
-            if (! n.isJoinNode()) {
-              allChildrenAreJoinNodes = false;
-              break;
+    if (lastCleanChangeCount != modificationCount) {
+      if (! isJoinNode()) {
+        // removes parent node if our node can function as join node
+        if (parents.size() == 1) {
+          Node parentNode = parents.get(0);
+          if (parentNode.isJoinNode() && parentNode.children.size() < 2) {
+            for (Node n : parentNode.parents) {
+              n.removeChildNode(parentNode);
+              n.addChildNode(this);
             }
+            parentNode.deleteFromGraph();
           }
-          if (allChildrenAreJoinNodes) {
-            originalNodes = new ArrayList<Node>(childNodes);
-            for (int i = 0; i < originalNodes.size(); i++) {
-              Node childNode = originalNodes.get(i);
-              if (childNode.parentNodes.size() == 1) {
-                for (Node childsChild : childNode.childNodes) {
-                  addChildNode(childsChild);
-                }
-                modifiedNodes = childNodes.remove(childNode) || 
-                                  modifiedNodes || ! childNode.childNodes.isEmpty();
+        }
+      } else {
+        // loops till consistent state, break at bottom
+        while (true) {
+          // removes tail node on graph that has no children and is a synthetic join node
+          if (children.isEmpty()) {
+            lastCleanChangeCount = modificationCount;
+            deleteFromGraph();
+            return;
+          } else if (parents.size() == 1) {
+            // remove this node and instead connect parent node to our children
+            Node parentNode = parents.get(0);
+            for (Node childNode : children) {
+              parentNode.addChildNode(childNode);
+            }
+            parentNode.removeChildNode(this);
+            parentNode.doCleanGraph();
+            lastCleanChangeCount = modificationCount;
+            return;
+          }
+          // if all child nodes are join nodes, make this node function as the join node
+          boolean modifiedNodes = false;
+          List<Node> originalNodes;
+          int startChangeCount;
+          do {
+            startChangeCount = modificationCount;
+            boolean allChildrenAreJoinNodes = ! children.isEmpty();
+            for (Node n : children) {
+              if (! n.isJoinNode()) {
+                allChildrenAreJoinNodes = false;
+                break;
               }
             }
+            if (allChildrenAreJoinNodes) {
+              originalNodes = new ArrayList<Node>(children);
+              for (Node childNode: originalNodes) {
+                if (childNode.parents.size() == 1) {
+                  for (Node childsChild : childNode.children) {
+                    addChildNode(childsChild);
+                  }
+                  modifiedNodes = removeChildNode(childNode) || 
+                                    modifiedNodes || ! childNode.children.isEmpty();
+                }
+              }
+            } else {
+              originalNodes = null;
+            }
+          } while (originalNodes != null && startChangeCount != modificationCount);  // loop through all join only nodes
+          if (modifiedNodes) {
+            continue; // restart check if children change
           } else {
-            originalNodes = null;
+            break;
           }
-        } while (originalNodes != null && ! originalNodes.equals(childNodes));  // loop through all join only nodes
-        if (modifiedNodes) {
-          continue; // restart check if children change
-        } else {
-          break;
         }
       }
     }
+    lastCleanChangeCount = modificationCount;
   
-    // traverse to all child nodes to inspect themselves
+    // traverse to all child nodes to allow them to inspect themselves
     tillConsistent: while (true) {
-      List<Node> originalNodes = new ArrayList<Node>(childNodes);
-      for (int i = 0; i < originalNodes.size(); i++) {
-        originalNodes.get(i).doCleanGraph();
-        if (! originalNodes.equals(childNodes)) {
+      int startChangeCount = modificationCount;
+      for (Node childNode: children) {
+        childNode.doCleanGraph();
+        if (startChangeCount != modificationCount) {
           continue tillConsistent;
         }
       }
       break;
     }
-    
+
+    lastCleanChangeCount = modificationCount;
     // cleanup memory if possible
-    childNodes.trimToSize();
-    parentNodes.trimToSize();
+    children.trimToSize();
+    parents.trimToSize();
   }
 }
