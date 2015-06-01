@@ -35,7 +35,7 @@ import org.threadly.util.Clock;
 
 /**
  * <p>Class which handles drawing a window to show a given graph.</p>
- * 
+ *
  * @author jent - Mike Jensen
  */
 public class AmbushGraph {
@@ -59,11 +59,11 @@ public class AmbushGraph {
   private final Shell previewShell;
   private final Runnable redrawRunnable;
   private volatile GraphDataSet currentDataSet;
-  
+
   /**
-   * Constructs a new window which will display the graph of nodes.  Nodes will be provided via 
+   * Constructs a new window which will display the graph of nodes.  Nodes will be provided via
    * {@link #updateGraphModel(Node)}.
-   * 
+   *
    * @param scheduler Scheduler to schedule and execute tasks on to
    * @param display A non-disposed display to open the shell on
    */
@@ -72,10 +72,10 @@ public class AmbushGraph {
   }
 
   /**
-   * Constructs a new window which will display the graph of nodes.  Nodes will be provided via 
-   * {@link #updateGraphModel(Node)}.  This constructor allows you to specify the original window 
+   * Constructs a new window which will display the graph of nodes.  Nodes will be provided via
+   * {@link #updateGraphModel(Node)}.  This constructor allows you to specify the original window
    * size.
-   * 
+   *
    * @param scheduler Scheduler to schedule and execute tasks on to
    * @param display A non-disposed display to open the shell on
    * @param xSize Width in pixels for the window
@@ -83,7 +83,7 @@ public class AmbushGraph {
    */
   public AmbushGraph(PrioritySchedulerInterface scheduler, Display display, int xSize, int ySize) {
     ArgumentVerifier.assertNotNull(scheduler, "scheduler");
-    
+
     if (xSize < 1 || ySize < 1) {
       Rectangle displayBounds = display.getBounds();
       if (displayBounds.width > LARGE_X_SIZE && displayBounds.height > LARGE_Y_SIZE) {
@@ -96,7 +96,7 @@ public class AmbushGraph {
     }
     redrawRunnable = new Runnable() {
       private final AtomicBoolean displayTaskExeced = new AtomicBoolean();
-      
+
       @Override
       public void run() {
         if (! mainShell.isDisposed() && ! mainShell.getDisplay().isDisposed()) {
@@ -114,15 +114,15 @@ public class AmbushGraph {
         }
       }
     };
-    
+
     this.scheduler = scheduler;
     backgroundColor = new Color(display, BACKGROUND_GRAY, BACKGROUND_GRAY, BACKGROUND_GRAY);
-    
+
     mainShell = new Shell(display);
     mainShell.setText("Ambush execution graph");
     mainShell.setSize(xSize, ySize);
     mainShell.setBackground(backgroundColor);
-    
+
     mainShell.addListener(SWT.Paint, new Listener() {
       @Override
       public void handleEvent(Event arg0) {
@@ -130,12 +130,12 @@ public class AmbushGraph {
       }
     });
     new MainWindowListener().registerListener();
-    
+
     previewShell = new Shell(display);
     previewShell.setText("Ambush preview");
     previewShell.setSize(PREVIEW_X_SIZE, (int)(PREVIEW_X_SIZE * ((double)ySize) / xSize));
     previewShell.setBackground(backgroundColor);
-    
+
     previewShell.addListener(SWT.Paint, new Listener() {
       @Override
       public void handleEvent(Event arg0) {
@@ -148,7 +148,7 @@ public class AmbushGraph {
   }
 
   /**
-   * Opens the shell and handles doing the read and dispatch loop for the display.  This call will 
+   * Opens the shell and handles doing the read and dispatch loop for the display.  This call will
    * block until the shell is closed.
    */
   public void runGuiLoop() {
@@ -162,11 +162,11 @@ public class AmbushGraph {
       }
     }
   }
-  
+
   /**
-   * Updates the graph representation.  This call will start crawling from the head node provided 
+   * Updates the graph representation.  This call will start crawling from the head node provided
    * to explore all child nodes.
-   * 
+   *
    * @param headNode Node to start building graph from
    */
   public void updateGraphModel(Node headNode) {
@@ -174,7 +174,7 @@ public class AmbushGraph {
     Map<Integer, List<GuiPoint>> xRegionCountMap = new HashMap<Integer, List<GuiPoint>>();
     GraphDataSet newDataSet = new GraphDataSet(currentDataSet.mainBounds.x, currentDataSet.mainBounds.y);
     traverseNode(newDataSet, headNode, buildingMap, 1, 1, new AtomicInteger(), xRegionCountMap);
-    
+
     // cleanup xRegionCountMap
     int maxYCount = 0;
     Iterator<List<GuiPoint>> it = xRegionCountMap.values().iterator();
@@ -195,7 +195,7 @@ public class AmbushGraph {
         maxYCount = currentPoint;
       }
     }
-    
+
     newDataSet.setData(buildingMap);
     // TODO - make zooming smarter
     if (xRegionCountMap.size() > 50) {
@@ -217,43 +217,43 @@ public class AmbushGraph {
 
     synchronized (this) {
       currentDataSet = newDataSet;
-      
+
       if (zoomedIn()) {
         updateMainOrigin(0, currentDataSet.mainBounds.y / 2 - (mainShell.getSize().y / 2));
       }
       redrawRunnable.run();
     }
   }
-  
-  private void traverseNode(GraphDataSet newDataSet, 
-                            Node currentNode, Map<Node, GuiPoint> buildingMap, 
-                            int xRegion, int yRegion, AtomicInteger maxYRegion, 
+
+  private void traverseNode(GraphDataSet newDataSet,
+                            Node currentNode, Map<Node, GuiPoint> buildingMap,
+                            int xRegion, int yRegion, AtomicInteger maxYRegion,
                             Map<Integer, List<GuiPoint>> xRegionCountMap) {
     if (maxYRegion.get() < yRegion) {
       maxYRegion.set(yRegion);
     }
     GuiPoint currentPoint = buildingMap.get(currentNode);
     if (currentPoint == null) {
-      currentPoint = new GuiPoint(makeRandomColor(), newDataSet.mainBounds, 
+      currentPoint = new GuiPoint(makeRandomColor(), newDataSet.mainBounds,
                                   xRegionCountMap, xRegion, yRegion);
       buildingMap.put(currentNode, currentPoint);
       add(currentPoint, xRegionCountMap);
       int childNodeRegion = maxYRegion.get();
       Iterator<Node> it = currentNode.getChildNodes().iterator();
       while (it.hasNext()) {
-        traverseNode(newDataSet, it.next(), buildingMap, 
+        traverseNode(newDataSet, it.next(), buildingMap,
                      xRegion + 1, ++childNodeRegion, maxYRegion, xRegionCountMap);
       }
     } else {
       if (xRegion > currentPoint.xRegion) {
         Set<Node> inspectedNodes = new HashSet<Node>();
         inspectedNodes.add(currentNode);
-        shiftLeft(currentNode, currentPoint, buildingMap, 
+        shiftLeft(currentNode, currentPoint, buildingMap,
                   xRegion - currentPoint.xRegion, xRegionCountMap, inspectedNodes);
       }
     }
   }
-  
+
   private static void add(GuiPoint point, Map<Integer, List<GuiPoint>> map) {
     List<GuiPoint> currList = map.get(point.xRegion);
     if (currList == null) {
@@ -264,16 +264,16 @@ public class AmbushGraph {
       currList.add(point);
     }
   }
-  
+
   private static void remove(GuiPoint point, Map<Integer, List<GuiPoint>> map) {
     List<GuiPoint> currList = map.get(point.xRegion);
     if (currList != null) {
       currList.remove(point);
     }
   }
-  
-  private void shiftLeft(Node currNode, GuiPoint point, 
-                         Map<Node, GuiPoint> buildingMap, int shiftAmount, 
+
+  private void shiftLeft(Node currNode, GuiPoint point,
+                         Map<Node, GuiPoint> buildingMap, int shiftAmount,
                          Map<Integer, List<GuiPoint>> xRegionCountMap, Set<Node> shiftedNodes) {
     remove(point, xRegionCountMap);
     point.xRegion += shiftAmount;
@@ -292,7 +292,7 @@ public class AmbushGraph {
       }
     }
   }
-  
+
   private void updateDisplay(GC gc, boolean preview) {
     GraphDataSet dataSet = this.currentDataSet;
     //gc.setBackground(new Color(shell.getDisplay(), 230, 230, 230));
@@ -319,14 +319,14 @@ public class AmbushGraph {
       gc.setBackground(entry.getValue().color);
       gc.fillOval(pointX, pointY, size, size);
       gc.setBackground(backgroundColor);
-      
+
       // draw lines to peer nodes (which may or may not be drawn yet)
       Iterator<Node> it2 = entry.getKey().getChildNodes().iterator();
       while (it2.hasNext()) {
         Node child = it2.next();
         GuiPoint childPoint = dataSet.guiNodeMap.get(child);
         if (childPoint == null) {
-          System.err.println("***** " + entry.getKey().getName() + 
+          System.err.println("***** " + entry.getKey().getName() +
                                " is connected to an unknown node: " + child.getName() + " *****");
           continue;
         }
@@ -341,10 +341,10 @@ public class AmbushGraph {
           childX -= dataSet.mainOrigin.x;
           childY -= dataSet.mainOrigin.y;
         }
-        
+
         gc.drawLine(pointX, pointY, childX, childY);
       }
-      
+
       // Draw the label last
       if (! preview && (dataSet.drawAllNames || dataSet.highlightedPoint == entry.getValue())) {
         gc.setForeground(new Color(mainShell.getDisplay(), 0, 0, 0));
@@ -362,7 +362,7 @@ public class AmbushGraph {
         int translatedMainOriginY = (int)(dataSet.mainOrigin.y * yFactor);
         int translatedMainWidth = (int)(mainShell.getSize().x * xFactor);
         int translatedMainHeight = (int)(mainShell.getSize().y * yFactor);
-        gc.drawRectangle(translatedMainOriginX, translatedMainOriginY, 
+        gc.drawRectangle(translatedMainOriginX, translatedMainOriginY,
                          translatedMainWidth, translatedMainHeight);
       }
     } else {
@@ -373,7 +373,7 @@ public class AmbushGraph {
       }
     }
   }
-  
+
   private boolean zoomedIn() {
     if (Math.abs(currentDataSet.mainBounds.x - mainShell.getSize().x) > 10) {
       return true;
@@ -383,7 +383,7 @@ public class AmbushGraph {
       return false;
     }
   }
-  
+
   private GuiPoint getClosestPoint(int x, int y) {
     GraphDataSet dataSet = this.currentDataSet;
     Iterator<GuiPoint> it = dataSet.guiNodeMap.values().iterator();
@@ -393,7 +393,7 @@ public class AmbushGraph {
       GuiPoint point = it.next();
       if (Math.abs(point.getX() - dataSet.mainOrigin.x - x) <= DRAG_TOLLERANCE &&
           Math.abs(point.getY() - dataSet.mainOrigin.y - y) <= DRAG_TOLLERANCE) {
-        double distance = Math.sqrt(Math.pow(Math.abs(point.getX() - dataSet.mainOrigin.x - x), 2) + 
+        double distance = Math.sqrt(Math.pow(Math.abs(point.getX() - dataSet.mainOrigin.x - x), 2) +
                                     Math.pow(Math.abs(point.getY() - dataSet.mainOrigin.y - y), 2));
         if (distance < minDistance) {
           minDistance = distance;
@@ -403,7 +403,7 @@ public class AmbushGraph {
     }
     return minEntry;
   }
-  
+
   private void updateMainOrigin(int x, int y) {
     GraphDataSet dataSet = this.currentDataSet;
     if (x < 0) {
@@ -417,10 +417,10 @@ public class AmbushGraph {
       y = dataSet.mainBounds.y - mainShell.getBounds().height;
     }
     dataSet.mainOrigin = new Point(x, y);
-    
+
     redraw();
   }
-  
+
   private void redraw() {
     if (! mainShell.isDisposed() && ! mainShell.getDisplay().isDisposed()) {
       if (mainShell.isVisible()) {
@@ -431,7 +431,7 @@ public class AmbushGraph {
       }
     }
   }
-  
+
   private Color makeRandomColor() {
     final int maxValue = 150;
     int r = RANDOM.nextInt(maxValue);
@@ -439,7 +439,7 @@ public class AmbushGraph {
     int b = RANDOM.nextInt(maxValue);
     return new Color(mainShell.getDisplay(), r, g, b);
   }
-  
+
   private static int getSoftGridPoint(int region, int totalRegions, int maxDimension) {
     if (region < 1) {
       throw new IllegalArgumentException("Region must be >= 1: " + region);
@@ -462,10 +462,10 @@ public class AmbushGraph {
     }
     return pos;
   }
-  
+
   /**
    * <p>This class handles all listener actions for the main window.</p>
-   * 
+   *
    * @author jent - Mike Jensen
    */
   private class MainWindowListener implements DragDetectListener, MouseListener, MouseMoveListener {
@@ -474,7 +474,7 @@ public class AmbushGraph {
       mainShell.addMouseListener(this);
       mainShell.addMouseMoveListener(this);
     }
-    
+
     @Override
     public void dragDetected(DragDetectEvent dde) {
       if (dde.button != 1) {
@@ -487,18 +487,18 @@ public class AmbushGraph {
         dataSet.dragPoint = new Point(dde.x, dde.y);
       }
     }
-  
+
     @Override
     public void mouseDoubleClick(MouseEvent me) {
       // ignored
     }
-  
+
     @Override
     public void mouseDown(MouseEvent me) {
       if (me.button != 1) {
         return;
       }
-      
+
       if (me.x < 150 && me.y < 50) {
         GraphDataSet dataSet = AmbushGraph.this.currentDataSet;
         dataSet.drawAllNames = ! dataSet.drawAllNames;
@@ -508,27 +508,27 @@ public class AmbushGraph {
         mainShell.redraw();
       }
     }
-  
+
     @Override
     public void mouseUp(MouseEvent me) {
       GraphDataSet dataSet = AmbushGraph.this.currentDataSet;
       dataSet.movingPoint = null;
       dataSet.dragPoint = null;
     }
-  
+
     @Override
     public void mouseMove(MouseEvent me) {
       GraphDataSet dataSet = AmbushGraph.this.currentDataSet;
       if (dataSet.dragPoint != null) {
         if (dataSet.dragPoint.x != me.x || dataSet.dragPoint.y != me.y) {
-          updateMainOrigin(dataSet.mainOrigin.x + dataSet.dragPoint.x - me.x, 
+          updateMainOrigin(dataSet.mainOrigin.x + dataSet.dragPoint.x - me.x,
                            dataSet.mainOrigin.y + dataSet.dragPoint.y - me.y);
           dataSet.dragPoint = new Point(me.x, me.y);
         }
       } else if (dataSet.movingPoint != null) {
-        dataSet.movingPoint.setPosition(Math.max(Math.min(me.x + dataSet.mainOrigin.x, dataSet.mainBounds.x - 25), 10), 
+        dataSet.movingPoint.setPosition(Math.max(Math.min(me.x + dataSet.mainOrigin.x, dataSet.mainBounds.x - 25), 10),
                                         Math.max(Math.min(me.y + dataSet.mainOrigin.y, dataSet.mainBounds.y - 45), 10));
-        
+
         redraw();
       } else if (! dataSet.drawAllNames) {
         GuiPoint previousHighlighted = dataSet.highlightedPoint;
@@ -543,10 +543,10 @@ public class AmbushGraph {
       }
     }
   }
-  
+
   /**
    * <p>This class handles all listener actions for the preview window.</p>
-   * 
+   *
    * @author jent - Mike Jensen
    */
   private class PreviewWindowListener implements DragDetectListener, MouseListener, MouseMoveListener {
@@ -555,7 +555,7 @@ public class AmbushGraph {
       previewShell.addMouseListener(this);
       previewShell.addMouseMoveListener(this);
     }
-    
+
     @Override
     public void dragDetected(DragDetectEvent arg0) {
       if (arg0.button != 1 || ! zoomedIn()) {
@@ -569,7 +569,7 @@ public class AmbushGraph {
       int translatedMainOriginY = (int)(dataSet.mainOrigin.y * yFactor);
       int translatedMainWidth = (int)(mainShell.getSize().x * xFactor);
       int translatedMainHeight = (int)(mainShell.getSize().y * yFactor);
-      if (arg0.x > translatedMainOriginX && arg0.x < translatedMainOriginX + translatedMainWidth && 
+      if (arg0.x > translatedMainOriginX && arg0.x < translatedMainOriginX + translatedMainWidth &&
           arg0.y > translatedMainOriginY && arg0.y < translatedMainOriginY + translatedMainHeight) {
         dataSet.dragPoint = new Point(arg0.x, arg0.y);
       }
@@ -594,7 +594,7 @@ public class AmbushGraph {
       if (me.button != 1 || ! zoomedIn()) {
         return;
       }
-      
+
       GraphDataSet dataSet = AmbushGraph.this.currentDataSet;
       double xFactor = ((double)dataSet.mainBounds.x) / previewShell.getSize().x;
       double yFactor = ((double)dataSet.mainBounds.y) / previewShell.getSize().y;
@@ -612,21 +612,21 @@ public class AmbushGraph {
       currentDataSet.dragPoint = null;
     }
   }
-  
+
   /**
    * <p>Container of data which represents the state of the graph.</p>
-   * 
+   *
    * @author jent - Mike Jensen
    */
-  private static class GraphDataSet {
-    private final Point mainBounds;
-    private volatile Map<Node, GuiPoint> guiNodeMap;
-    private volatile boolean drawAllNames;
-    private volatile Point mainOrigin;
+  protected static class GraphDataSet {
+    protected final Point mainBounds;
+    protected volatile Map<Node, GuiPoint> guiNodeMap;
+    protected volatile boolean drawAllNames;
+    protected volatile Point mainOrigin;
     private GuiPoint movingPoint;
     private Point dragPoint;
     private GuiPoint highlightedPoint;
-    
+
     public GraphDataSet(int xSize, int ySize) {
       mainBounds = new Point(xSize, ySize);
       guiNodeMap = Collections.emptyMap();
@@ -636,12 +636,23 @@ public class AmbushGraph {
       dragPoint = null;
       highlightedPoint = null;
     }
-    
+
+    /**
+     * Updates the stored data with the provided guiNodeMap.
+     * 
+     * @param guiNodeMap New map of nodes and points to store
+     */
     public void setData(Map<Node, GuiPoint> guiNodeMap) {
       this.guiNodeMap = guiNodeMap;
       drawAllNames = guiNodeMap.size() <= MAX_NODES_DRAW_ALL_NAMES;
     }
-    
+
+    /**
+     * Squeezes collections of points together.  This should only be called after the 
+     * {@link #mainBounds} has been set.
+     * 
+     * @param headNode Node to start traversing graph from
+     */
     public void squeezePoints(Node headNode) {
       // cluster the dots better
       List<Node> childNodes = new ArrayList<Node>();
@@ -663,10 +674,10 @@ public class AmbushGraph {
           for (Node pNode : childNode.getParentNodes()) {
             GuiPoint gp = guiNodeMap.get(pNode);
             if (gp == null) {
-              /* TODO - this is rather common due to deleted nodes which make 
+              /* TODO - this is rather common due to deleted nodes which make
                * parts of the graph unable to be reached from child nodes
                */
-              /*System.err.println("***** " + childNode.getName() + 
+              /*System.err.println("***** " + childNode.getName() +
                                  " is connected to an unknown node: " + pNode.getName() + " *****");*/
               continue;
             }
@@ -687,31 +698,32 @@ public class AmbushGraph {
       }
     }
   }
-  
+
   /**
    * <p>Class which stores information for used for drawing a node on the GUI.</p>
-   * 
+   *
    * @author jent - Mike Jensen
    */
-  private static class GuiPoint {
-    private final Color color;
-    private final Point mainBounds;
-    private Map<Integer, List<GuiPoint>> xRegionCountMap;
-    private int xRegion;
-    private int yRegion;
-    private boolean coordiantesSet;
-    private int x;
-    private int y;
-    
-    public GuiPoint(Color color, Point mainBounds, 
+  protected static class GuiPoint {
+    protected final Color color;
+    protected final Point mainBounds;
+    protected Map<Integer, List<GuiPoint>> xRegionCountMap;
+    protected int xRegion;
+    protected int yRegion;
+    protected boolean coordiantesSet;
+    protected int x;
+    protected int y;
+
+    public GuiPoint(Color color, Point mainBounds,
                     Map<Integer, List<GuiPoint>> xRegionCountMap, int xRegion, int yRegion) {
       this.color = color;
       this.mainBounds = mainBounds;
       this.xRegionCountMap = xRegionCountMap;
       this.xRegion = xRegion;
       this.yRegion = yRegion;
+      coordiantesSet = false;
     }
-    
+
     private void ensureCoordinatesSet() {
       if (! coordiantesSet) {
         coordiantesSet = true;
@@ -724,17 +736,17 @@ public class AmbushGraph {
         xRegionCountMap = null; // no longer needed, allow GC
       }
     }
-    
+
     public int getX() {
       ensureCoordinatesSet();
       return x;
     }
-    
+
     public int getY() {
       ensureCoordinatesSet();
       return y;
     }
-    
+
     public void setPosition(int x, int y) {
       coordiantesSet = true;
       this.x = x;
