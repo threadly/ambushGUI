@@ -584,6 +584,7 @@ public class AmbushGraph {
             mainShell.redraw();
           } else {
             // set delay for when name should disappear
+            scheduler.remove(redrawRunnable);
             scheduler.schedule(redrawRunnable, HIGHLIGHT_DISAPEAR_DELAY);
           }
         }
