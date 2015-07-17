@@ -482,10 +482,15 @@ public class AmbushGraph {
     } else if (region > totalRegions) {
       throw new IllegalArgumentException("Region can not be beyond total regions: " + region + " / " + totalRegions);
     }
-    int spacePerRegion = maxDimension / totalRegions;
-    int pos = spacePerRegion / 2;
+    double spacePerRegion = (double)maxDimension / totalRegions;
+    double pos = spacePerRegion / 2;
     pos += (region - 1) * spacePerRegion;
-    int softness = RANDOM.nextInt(GRID_SOFTNESS);
+    int softness;
+    if (spacePerRegion > 2) {
+      softness = RANDOM.nextInt((int)Math.min(GRID_SOFTNESS, spacePerRegion));
+    } else {
+      softness = 2;
+    }
     if (pos < DISTANCE_FROM_EDGE || (pos < maxDimension - DISTANCE_FROM_EDGE && RANDOM.nextBoolean())) {
       pos += softness;
     } else {
@@ -496,7 +501,7 @@ public class AmbushGraph {
     } else if (pos > maxDimension - DISTANCE_FROM_EDGE) {
       pos = maxDimension - DISTANCE_FROM_EDGE - softness;
     }
-    return pos;
+    return (int)pos;
   }
 
   /**
@@ -596,7 +601,7 @@ public class AmbushGraph {
       GraphDataSet dataSet = AmbushGraph.this.currentDataSet;
       double newZoomFactor;
       if (me.count > 0) {
-        if ( dataSet.zoomFactor > 5) {
+        if (dataSet.zoomFactor > 5) {
           // already fully zoomed in
           return;
         }
