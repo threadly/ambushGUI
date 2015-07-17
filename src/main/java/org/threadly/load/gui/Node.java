@@ -173,8 +173,8 @@ public class Node {
         while (true) {
           // removes tail node on graph that has no children and is a synthetic join node
           if (children.isEmpty()) {
-            lastCleanChangeCount = modificationCount;
             deleteFromGraph();
+            lastCleanChangeCount = modificationCount;
             return;
           } else if (parents.size() == 1) {
             // remove this node and instead connect parent node to our children
@@ -183,8 +183,8 @@ public class Node {
               parentNode.addChildNode(childNode);
             }
             parentNode.removeChildNode(this);
-            parentNode.doCleanGraph();
             lastCleanChangeCount = modificationCount;
+            parentNode.doCleanGraph();
             return;
           }
           // if all child nodes are join nodes, make this node function as the join node
@@ -222,24 +222,25 @@ public class Node {
           }
         }
       }
-    }
-    lastCleanChangeCount = modificationCount;
-  
-    // traverse to all child nodes to allow them to inspect themselves
-    tillConsistent: while (true) {
-      int startChangeCount = modificationCount;
-      for (Node childNode: children) {
-        childNode.doCleanGraph();
-        if (startChangeCount != modificationCount) {
-          continue tillConsistent;
+      lastCleanChangeCount = modificationCount;
+      
+      // traverse to all child nodes to allow them to inspect themselves
+      tillConsistent: while (true) {
+        int startChangeCount = modificationCount;
+        for (Node childNode: children) {
+          childNode.doCleanGraph();
+          if (startChangeCount != modificationCount) {
+            continue tillConsistent;
+          }
         }
+        break;
       }
-      break;
-    }
 
-    lastCleanChangeCount = modificationCount;
-    // cleanup memory if possible
-    children.trimToSize();
-    parents.trimToSize();
+      lastCleanChangeCount = modificationCount;
+      
+      // cleanup memory if possible
+      children.trimToSize();
+      parents.trimToSize();
+    }
   }
 }
