@@ -13,7 +13,7 @@ import org.threadly.util.StringUtils;
  * @author jent - Mike Jensen
  */
 public class Node {
-  private static final String JOIN_NAME = StringUtils.randomString(5);  // can be short due to identity comparison
+  private static final String JOIN_NAME = StringUtils.makeRandomString(5);  // can be short due to identity comparison
 
   protected final String name;
   // private to ensure changes are recorded in modificationCount

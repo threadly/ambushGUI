@@ -9,7 +9,7 @@ import org.threadly.util.StringUtils;
 
 @SuppressWarnings("javadoc")
 public class NodeTest {
-  private static final String TEST_NODE_NAME = StringUtils.randomString(5);
+  private static final String TEST_NODE_NAME = StringUtils.makeRandomString(5);
   
   private Node joinNode;
   private Node node;
