@@ -32,7 +32,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
-import org.threadly.concurrent.PrioritySchedulerInterface;
+import org.threadly.concurrent.PrioritySchedulerService;
 import org.threadly.util.ArgumentVerifier;
 import org.threadly.util.Clock;
 
@@ -56,7 +56,7 @@ public class AmbushGraph {
   private static final int MAX_NODES_DRAW_ALL_NAMES = 20; // number of nodes till names are not automatically shown
   private static final Random RANDOM = new Random(Clock.lastKnownTimeMillis());
 
-  private final PrioritySchedulerInterface scheduler;
+  private final PrioritySchedulerService scheduler;
   private final Color backgroundColor;
   private final Shell mainShell;
   private final MainWindowListener mainWindowListener;
@@ -72,7 +72,7 @@ public class AmbushGraph {
    * @param scheduler Scheduler to schedule and execute tasks on to
    * @param display A non-disposed display to open the shell on
    */
-  public AmbushGraph(PrioritySchedulerInterface scheduler, Display display) {
+  public AmbushGraph(PrioritySchedulerService scheduler, Display display) {
     this(scheduler, display, -1, -1);
   }
 
@@ -86,7 +86,7 @@ public class AmbushGraph {
    * @param xSize Width in pixels for the window
    * @param ySize Height in pixels for the window
    */
-  public AmbushGraph(PrioritySchedulerInterface scheduler, Display display, int xSize, int ySize) {
+  public AmbushGraph(PrioritySchedulerService scheduler, Display display, int xSize, int ySize) {
     ArgumentVerifier.assertNotNull(scheduler, "scheduler");
 
     if (xSize < 1 || ySize < 1) {
