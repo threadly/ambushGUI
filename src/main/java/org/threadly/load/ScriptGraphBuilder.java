@@ -34,13 +34,13 @@ public class ScriptGraphBuilder extends AbstractScriptFactoryInitializer {
    * initial steps are ran sequentially between each other, but it can handle steps which fork 
    * out into parallel channels.
    * 
-   * @param steps Collection of sequential steps to start graph production from
+   * @param childItems Collection of sequential steps to start graph production from
    * @return Head node of a graph which matches the steps execution
    */
-  public static Node makeGraph(ExecutionItem[] steps) {
+  public static Node makeGraph(ChildItems childItems) {
     Node head = new Node("start");
     Node current = head;
-    for (ExecutionItem step : steps) {
+    for (ExecutionItem step : childItems) {
       current = expandNode(current, step, new AtomicInteger());
     }
     
@@ -96,6 +96,6 @@ public class ScriptGraphBuilder extends AbstractScriptFactoryInitializer {
   }
   
   protected Node makeGraph() {
-    return ScriptGraphBuilder.makeGraph(script.steps);
+    return ScriptGraphBuilder.makeGraph(script.startExecutionItem.getChildItems());
   }
 }
