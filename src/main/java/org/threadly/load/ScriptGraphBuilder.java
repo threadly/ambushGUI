@@ -98,4 +98,14 @@ public class ScriptGraphBuilder extends AbstractScriptFactoryInitializer {
   protected Node makeGraph() {
     return ScriptGraphBuilder.makeGraph(script.startExecutionItem.getChildItems());
   }
+
+  @Override
+  protected void handleInitializationFailure(String buildingScript) {
+    if (buildingScript == null || buildingScript.isEmpty()) {
+      buildingScript = "script.factory.to.call";
+    }
+    System.err.println("java " + this.getClass().getName() + 
+                         " " + buildingScript + " key1=value1 key2=value2....");
+    System.exit(-1);
+  }
 }
