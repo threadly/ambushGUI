@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
+
 import org.threadly.concurrent.PrioritySchedulerService;
 import org.threadly.util.ArgumentVerifier;
 import org.threadly.util.Clock;

@@ -1,6 +1,7 @@
 package org.threadly.load.gui;
 
 import org.eclipse.swt.widgets.Display;
+
 import org.threadly.concurrent.PriorityScheduler;
 import org.threadly.load.ScriptGraphBuilder;
 

@@ -1,7 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'checkstyle'
 apply plugin: 'jacoco'
-apply plugin: 'maven'
 
 group = 'org.threadly'
 version = '0.1-SNAPSHOT'
@@ -52,10 +51,11 @@ ext {
 }
 
 dependencies {
-  testCompile group: 'junit', name: 'junit', version: '4.12'
-  
-  compile (
+  testImplementation group: 'junit', name: 'junit', version: '4.12'
+
+  implementation (
     "org.threadly:ambush:0.+",
+    "org.threadly:threadly:5.+",
     "org.eclipse.swt:${swtArtifactName}:${swtVersion}"
   )
 }
@@ -66,13 +66,6 @@ compileJava {
 
 compileTestJava {
   options.compilerArgs << "-Xlint:all" << "-Werror"
-}
-
-jar {
-  manifest {
-    attributes 'Implementation-Title': 'AmbushGUI', 'Implementation-Version': version
-  }
-  from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
 }
 
 plugins.withType(JavaPlugin) {
@@ -93,10 +86,6 @@ test {
 build.dependsOn jacocoTestReport
 
 jacocoTestReport {
-  doFirst {
-    classDirectories = fileTree(dir: 'build/classes/java/main', include: 'org/threadly/**')
-    sourceDirectories = fileTree(dir: 'src/main/java', include: 'org/threadly/**')
-  }
   reports {
     csv.enabled = false
     xml.enabled = true
@@ -110,6 +99,16 @@ jacocoTestReport {
     println "Test coverage reports available at:"
     println "html - $buildDir/reports/jacoco/html/index.html"
   }
+}
+
+jar {
+  manifest {
+    attributes (
+      'Implementation-Title': 'AmbushGUI', 
+      'Implementation-Version': archiveVersion
+    )
+  }
+  from configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
 }
 
 javadoc {
@@ -131,7 +130,7 @@ build.dependsOn("copyLibs");
 
 task copyLibs(type: Copy) {
   into "$buildDir/dependencies/"
-  from configurations.runtime
+  from configurations.runtimeClasspath
 }
 
 artifacts {

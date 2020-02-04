@@ -41,18 +41,18 @@
     <module name="LocalVariableName"/>
     <module name="TypeName"/>
     <module name="AvoidStarImport"/>
-    <module name="ImportOrder">
-      <property name="option" value="above"/>
-      <property name="separated" value="true"/>
+    <module name="CustomImportOrder">
+      <property name="customImportOrderRules"
+                value="STATIC###STANDARD_JAVA_PACKAGE###SPECIAL_IMPORTS"/>
+      <property name="specialImportsRegExp" value="^org\.threadly\."/>
+      <property name="specialImportsRegExp" value="^org\.eclipse\."/>
+      <property name="sortImportsInGroupAlphabetically" value="true"/>
+      <property name="separateLineBetweenGroups" value="true"/>
     </module>
     <module name="RedundantImport"/>
     <module name="UnusedImports"/>
     <module name="AnonInnerLength">
       <property name="max" value="50"/>
-    </module>
-    <module name="LineLength">
-      <property name="max" value="120"/>
-      <property name="tabWidth" value="2"/>
     </module>
     <module name="MethodLength"/>
     <module name="ParameterNumber">
@@ -87,6 +87,10 @@
       <metadata name="net.sf.eclipsecs.core.lastEnabledSeverity" value="inherit"/>
     </module>
     <module name="ModifierOrder"/>
+  </module>
+  <module name="LineLength">
+    <property name="max" value="120"/>
+    <property name="tabWidth" value="2"/>
   </module>
   <module name="JavadocPackage"/>
   <module name="FileLength"/>
